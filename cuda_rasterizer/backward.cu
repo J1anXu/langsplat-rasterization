@@ -398,7 +398,7 @@ __global__ void preprocessCUDA(
 // Backward version of the rendering procedure.
 template <uint32_t C, uint32_t F>
 __global__ void __launch_bounds__(BLOCK_X * BLOCK_Y)
-void renderCUDA(
+renderCUDA(
     const uint2* __restrict__ ranges,
     const uint32_t* __restrict__ point_list,
     int W, int H,

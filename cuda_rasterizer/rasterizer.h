@@ -39,6 +39,8 @@ namespace CudaRasterizer
 			const float* shs,
 			const float* colors_precomp,
 			const float* language_feature_precomp,
+			const float* language_feature_precomp2,
+			const float* language_feature_precomp3,
 			const float* opacities,
 			const float* scales,
 			const float scale_modifier,
@@ -51,9 +53,12 @@ namespace CudaRasterizer
 			const bool prefiltered,
 			float* out_color,
 			float* out_language_feature,
+			float* out_language_feature2,
+			float* out_language_feature3,
 			int* radii = nullptr,
 			bool debug = false,
 			bool include_feature = false);
+
 
 		static void backward(
 			const int P, int D, int M, int R,

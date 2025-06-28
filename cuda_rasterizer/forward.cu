@@ -369,10 +369,12 @@ renderCUDA(
 
 			if (include_feature)
 			{
-				for (int ch = 0; ch < CHANNELS_language_feature; ch++)
+				for (int ch = 0; ch < CHANNELS_language_feature; ch++){
 					F[ch] += language_feature[collected_id[j] * CHANNELS_language_feature + ch] * alpha * T;
 					F2[ch] += language_feature2[collected_id[j] * CHANNELS_language_feature + ch] * alpha * T;
 					F3[ch] += language_feature3[collected_id[j] * CHANNELS_language_feature + ch] * alpha * T;
+				}
+
 
 			}
 
@@ -395,10 +397,12 @@ renderCUDA(
 		
 		if (include_feature) 
 		{
-			for (int ch = 0; ch < CHANNELS_language_feature; ch++)
+			for (int ch = 0; ch < CHANNELS_language_feature; ch++){
 				out_language_feature[ch * H * W + pix_id] = F[ch]; //bg_color ???
 				out_language_feature2[ch * H * W + pix_id] = F2[ch];
 				out_language_feature3[ch * H * W + pix_id] = F3[ch];
+			}
+
 
 		}
 		

@@ -62,7 +62,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
 	const float tan_fovy,
     const torch::Tensor& dL_dout_color,
 	const torch::Tensor& dL_dout_language_feature,
-	const torch::Tensor& dL_dout_language_feature2
+	const torch::Tensor& dL_dout_language_feature2,
 	const torch::Tensor& dL_dout_language_feature3,
 
 	const torch::Tensor& sh,

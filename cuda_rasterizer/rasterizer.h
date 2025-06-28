@@ -63,6 +63,8 @@ namespace CudaRasterizer
 			const float* shs,
 			const float* colors_precomp,
 			const float* language_feature_precomp,
+			const float* language_feature2_precomp,
+			const float* language_feature3_precomp,
 			const float* scales,
 			const float scale_modifier,
 			const float* rotations,
@@ -77,11 +79,15 @@ namespace CudaRasterizer
 			char* image_buffer,
 			const float* dL_dpix,
 			const float* dL_dpix_F,
+			const float* dL_dpix_F2,
+			const float* dL_dpix_F3,
 			float* dL_dmean2D,
 			float* dL_dconic,
 			float* dL_dopacity,
 			float* dL_dcolor,
 			float* dL_dlanguage_feature,
+			float* dL_dlanguage_feature2,
+			float* dL_dlanguage_feature3,
 			float* dL_dmean3D,
 			float* dL_dcov3D,
 			float* dL_dsh,
@@ -91,5 +97,6 @@ namespace CudaRasterizer
 			bool include_feature);
 	};
 };
+
 
 #endif

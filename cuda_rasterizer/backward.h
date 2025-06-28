@@ -30,15 +30,21 @@ namespace BACKWARD
 		const float4* conic_opacity,
 		const float* colors,
 		const float* language_feature,
+		const float* language_feature2,
+		const float* language_feature3,
 		const float* final_Ts,
 		const uint32_t* n_contrib,
 		const float* dL_dpixels,
 		const float* dL_dpixels_F,
+		const float* dL_dpixels_F2,
+		const float* dL_dpixels_F3,
 		float3* dL_dmean2D,
 		float4* dL_dconic2D,
 		float* dL_dopacity,
 		float* dL_dcolors,
 		float* dL_dlanguage_feature,
+		float* dL_dlanguage_feature2,
+		float* dL_dlanguage_feature3,
 		bool include_feature);
 
 	void preprocess(
@@ -65,5 +71,6 @@ namespace BACKWARD
 		glm::vec3* dL_dscale,
 		glm::vec4* dL_drot);
 }
+
 
 #endif

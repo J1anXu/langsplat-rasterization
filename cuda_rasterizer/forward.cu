@@ -268,12 +268,18 @@ renderCUDA(
 	const float2* __restrict__ points_xy_image,
 	const float* __restrict__ features,
 	const float* __restrict__ language_feature,
+	const float* __restrict__ language_feature2,
+	const float* __restrict__ language_feature3,
+
 	const float4* __restrict__ conic_opacity,
 	float* __restrict__ final_T,
 	uint32_t* __restrict__ n_contrib,
 	const float* __restrict__ bg_color,
 	float* __restrict__ out_color,
 	float* __restrict__ out_language_feature,
+	float* __restrict__ out_language_feature2,
+	float* __restrict__ out_language_feature3,
+
 	bool include_feature)
 {
 	// Identify current tile and associated min/max pixel range.
@@ -306,6 +312,8 @@ renderCUDA(
 	uint32_t last_contributor = 0;
 	float C[CHANNELS] = { 0 };
 	float F[CHANNELS_language_feature] = { 0 };
+	float F2[CHANNELS_language_feature] = { 0 };
+	float F3[CHANNELS_language_feature] = { 0 };
 
 	// Iterate over batches until all done or range is complete
 	for (int i = 0; i < rounds; i++, toDo -= BLOCK_SIZE)
@@ -363,6 +371,9 @@ renderCUDA(
 			{
 				for (int ch = 0; ch < CHANNELS_language_feature; ch++)
 					F[ch] += language_feature[collected_id[j] * CHANNELS_language_feature + ch] * alpha * T;
+					F2[ch] += language_feature2[collected_id[j] * CHANNELS_language_feature + ch] * alpha * T;
+					F3[ch] += language_feature3[collected_id[j] * CHANNELS_language_feature + ch] * alpha * T;
+
 			}
 
 			T = test_T;
@@ -386,6 +397,9 @@ renderCUDA(
 		{
 			for (int ch = 0; ch < CHANNELS_language_feature; ch++)
 				out_language_feature[ch * H * W + pix_id] = F[ch]; //bg_color ???
+				out_language_feature2[ch * H * W + pix_id] = F2[ch];
+				out_language_feature3[ch * H * W + pix_id] = F3[ch];
+
 		}
 		
 	}
@@ -400,12 +414,18 @@ void FORWARD::render(
 	const float2* means2D,
 	const float* colors,
 	const float* language_feature,
+	const float* language_feature2,
+	const float* language_feature3,
+
 	const float4* conic_opacity,
 	float* final_T,
 	uint32_t* n_contrib,
 	const float* bg_color,
 	float* out_color,
 	float* out_language_feature,
+	float* out_language_feature2,
+	float* out_language_feature3,
+
 	bool include_feature)
 {
 	renderCUDA<NUM_CHANNELS, NUM_CHANNELS_language_feature> << <grid, block >> > (
@@ -415,12 +435,18 @@ void FORWARD::render(
 		means2D,
 		colors,
 		language_feature,
+		language_feature2,
+		language_feature3,
+
 		conic_opacity,
 		final_T,
 		n_contrib,
 		bg_color,
 		out_color,
 		out_language_feature,
+		out_language_feature2,
+		out_language_feature3,
+
 		include_feature);
 
 }

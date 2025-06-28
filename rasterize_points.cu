@@ -32,12 +32,14 @@ std::function<char*(size_t N)> resizeFunctional(torch::Tensor& t) {
     return lambda;
 }
 
-std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+std::tuple<int, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 RasterizeGaussiansCUDA(
 	const torch::Tensor& background,
 	const torch::Tensor& means3D,
     const torch::Tensor& colors,
 	const torch::Tensor& language_feature, // new
+	const torch::Tensor& language_feature2, // new
+	const torch::Tensor& language_feature3, // new
     const torch::Tensor& opacity,
 	const torch::Tensor& scales,
 	const torch::Tensor& rotations,
@@ -69,11 +71,20 @@ RasterizeGaussiansCUDA(
 
   torch::Tensor out_color = torch::full({NUM_CHANNELS, H, W}, 0.0, float_opts);
   torch::Tensor out_language_feature;
+  torch::Tensor out_language_feature2;
+  torch::Tensor out_language_feature3;
+
   if (include_feature) {
 	out_language_feature = torch::full({NUM_CHANNELS_language_feature, H, W}, 0.0, float_opts);
+	out_language_feature2 = torch::full({NUM_CHANNELS_language_feature, H, W}, 0.0, float_opts);
+	out_language_feature3 = torch::full({NUM_CHANNELS_language_feature, H, W}, 0.0, float_opts);
+
   }
   else {
 	out_language_feature = torch::full({1}, 0.0, float_opts);
+	out_language_feature2 = torch::full({1}, 0.0, float_opts);
+	out_language_feature3 = torch::full({1}, 0.0, float_opts);
+
   }
   
   torch::Tensor radii = torch::full({P}, 0, means3D.options().dtype(torch::kInt32));
@@ -106,6 +117,9 @@ RasterizeGaussiansCUDA(
 		sh.contiguous().data_ptr<float>(),
 		colors.contiguous().data<float>(), 
 		language_feature.contiguous().data<float>(),
+		language_feature2.contiguous().data<float>(),
+		language_feature3.contiguous().data<float>(),
+
 		opacity.contiguous().data<float>(), 
 		scales.contiguous().data_ptr<float>(),
 		scale_modifier,
@@ -119,20 +133,26 @@ RasterizeGaussiansCUDA(
 		prefiltered,
 		out_color.contiguous().data<float>(),
 		out_language_feature.contiguous().data<float>(),
+		out_language_feature2.contiguous().data<float>(),
+		out_language_feature3.contiguous().data<float>(),
+
 		radii.contiguous().data<int>(),
 		debug,
 		include_feature);
   }
-  return std::make_tuple(rendered, out_color, out_language_feature, radii, geomBuffer, binningBuffer, imgBuffer);
+  return std::make_tuple(rendered, out_color, out_language_feature, out_language_feature2, out_language_feature3, radii, geomBuffer, binningBuffer, imgBuffer);
 }
 
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
  RasterizeGaussiansBackwardCUDA(
  	const torch::Tensor& background,
 	const torch::Tensor& means3D,
 	const torch::Tensor& radii,
     const torch::Tensor& colors,
 	const torch::Tensor& language_feature,
+	const torch::Tensor& language_feature2,
+	const torch::Tensor& language_feature3,
+
 	const torch::Tensor& scales,
 	const torch::Tensor& rotations,
 	const float scale_modifier,
@@ -143,6 +163,9 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
 	const float tan_fovy,
     const torch::Tensor& dL_dout_color,
 	const torch::Tensor& dL_dout_language_feature,
+	const torch::Tensor& dL_dout_language_feature2,
+	const torch::Tensor& dL_dout_language_feature3,
+
 	const torch::Tensor& sh,
 	const int degree,
 	const torch::Tensor& campos,
@@ -168,11 +191,20 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
   torch::Tensor dL_dcolors = torch::zeros({P, NUM_CHANNELS}, means3D.options());
 
   torch::Tensor dL_dlanguage_feature;
+  torch::Tensor dL_dlanguage_feature2;
+  torch::Tensor dL_dlanguage_feature3;
+
   if (include_feature) {
 	dL_dlanguage_feature = torch::zeros({P, NUM_CHANNELS_language_feature}, means3D.options());
+	dL_dlanguage_feature2 = torch::zeros({P, NUM_CHANNELS_language_feature}, means3D.options());
+	dL_dlanguage_feature3 = torch::zeros({P, NUM_CHANNELS_language_feature}, means3D.options());
+
 	// dL_dlanguage_feature = torch::zeros({1}, means3D.options());
   } else {
 	dL_dlanguage_feature = torch::zeros({1}, means3D.options());
+	dL_dlanguage_feature2 = torch::zeros({1}, means3D.options());
+	dL_dlanguage_feature3 = torch::zeros({1}, means3D.options());
+
   }
   
   torch::Tensor dL_dconic = torch::zeros({P, 2, 2}, means3D.options());
@@ -191,6 +223,9 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
 	  sh.contiguous().data<float>(),
 	  colors.contiguous().data<float>(),
 	  language_feature.contiguous().data<float>(),
+	  language_feature2.contiguous().data<float>(),
+	  language_feature3.contiguous().data<float>(),
+
 	  scales.data_ptr<float>(),
 	  scale_modifier,
 	  rotations.data_ptr<float>(),
@@ -206,11 +241,17 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
 	  reinterpret_cast<char*>(imageBuffer.contiguous().data_ptr()),
 	  dL_dout_color.contiguous().data<float>(),
 	  dL_dout_language_feature.contiguous().data<float>(),
+	  dL_dout_language_feature2.contiguous().data<float>(),
+	  dL_dout_language_feature3.contiguous().data<float>(),
+
 	  dL_dmeans2D.contiguous().data<float>(),
 	  dL_dconic.contiguous().data<float>(),  
 	  dL_dopacity.contiguous().data<float>(),
 	  dL_dcolors.contiguous().data<float>(),
 	  dL_dlanguage_feature.contiguous().data<float>(),
+	  dL_dlanguage_feature2.contiguous().data<float>(),
+	  dL_dlanguage_feature3.contiguous().data<float>(),
+
 	  dL_dmeans3D.contiguous().data<float>(),
 	  dL_dcov3D.contiguous().data<float>(),
 	  dL_dsh.contiguous().data<float>(),
@@ -220,7 +261,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
 	  include_feature);
   }
 
-  return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dlanguage_feature, dL_dopacity, dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations);
+  return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dlanguage_feature, dL_dlanguage_feature2, dL_dlanguage_feature3, dL_dopacity, dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations);
 }
 
 torch::Tensor markVisible(
